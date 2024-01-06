@@ -4,20 +4,18 @@ let
   password="printer";
   hostname = "octoprint";
 in {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-    ];
-
   boot = {
     kernelPackages = pkgs.linuxKernel.packages.linux_rpi4;
     initrd.availableKernelModules = [ "xhci_pci" "usbhid" "usb_storage" ];
     loader = {
       grub.enable = false;
       generic-extlinux-compatible.enable = true;
+      raspberryPi.firmwareConfig = ''
+        gpu_mem=192
+      '';
     };
   };
-  
+
   networking = {
     hostName = hostname;
     useDHCP = false;
@@ -32,7 +30,6 @@ in {
     } ];
      wireless = {
       enable = true;
-      # networks."***REMOVED***".psk = "***REMOVED***";
       networks."Warriors DC".psk = "***REMOVED***";
       interfaces = [ "wlan0" ];
     };
@@ -44,10 +41,14 @@ in {
   ];
 
   services.openssh.enable = true;
+
   services.octoprint = {
     enable = true;
     port = 5000;
     openFirewall = true;
+    extraConfig = {
+      api.key = "DE291084FAF04AF9A04EFC4320C52A0D";
+    };
   };
 
   users = {
