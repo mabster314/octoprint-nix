@@ -37,7 +37,6 @@
           self.nixosModules.system
           nixos-hardware.nixosModules.raspberry-pi-4
           ./octoprint/configuration.nix
-          ./hardware-configuration.nix
         ];
       };
     };
