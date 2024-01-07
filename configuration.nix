@@ -1,6 +1,14 @@
 { config, lib, pkgs, ... }:
 let
   username = "max";
+  hostname = "octoprint";
+  nfsHost = "192.168.0.32:/mnt/atlantic/octoprint";
+  wlan_ssid = "Warriors DC";
+  wlan_psk = "***REMOVED***";
+  ip = { address = "192.168.0.174"; prefixLength = 24; };
+  gateway = "192.168.0.1";
+  dns = [ "1.1.1.1" "8.8.8.8" ];
+  timezone = "America/New_York";
 in {
   boot = {
     kernelPackages = pkgs.linuxKernel.packages.linux_rpi4;
@@ -15,23 +23,21 @@ in {
   };
 
   networking = {
-    hostName = "octoprint";
+    hostName = "${hostname}";
     useDHCP = false;
-    defaultGateway = "192.168.0.1";
-    nameservers = [
-      "1.1.1.1"
-      "8.8.8.8"
+    defaultGateway = "${gateway}";
+    nameservers = dns;
+    interfaces.wlan0.ipv4.addresses = [
+      ip
     ];
-    interfaces.wlan0.ipv4.addresses = [ {
-      address = "192.168.0.174";
-      prefixLength = 24;
-    } ];
      wireless = {
       enable = true;
-      networks."Warriors DC".psk = "***REMOVED***";
+      networks."${wlan_ssid}".psk = "${wlan_psk}";
       interfaces = [ "wlan0" ];
     };
   };
+
+  time.timeZone = "${timezone}";
 
   environment.systemPackages = with pkgs; [
     vim
@@ -48,20 +54,66 @@ in {
 
   # State directory for octoprint
   fileSystems."/var/lib/octoprint" = {
-    device = "192.168.0.32:/mnt/atlantic/octoprint";
+    device = "${nfsHost}";
     fsType = "nfs";
   };
 
-  # Make sure octoprint starts after state dir is mounted
-  systemd.services.octoprint = {
-    after = [ "var-lib-octoprint.mount" ];
+  services.nginx = {
+    enable = true;
+    virtualHosts."octoprint.local" = {
+      forceSSL = true;
+      sslCertificate = "/var/lib/octoprint/.ssl/cert.pem";
+      sslCertificateKey = "/var/lib/octoprint/.ssl/key.pem";
+      locations = {
+        "/" = {
+          proxyPass = "http://127.0.0.1:5000/";
+          extraConfig = ''
+            proxy_set_header Host $host;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Scheme $scheme;
+            proxy_http_version 1.1;
+
+            client_max_body_size 0;
+          '';
+        };
+        "/webcam/" = {
+          proxyPass = "http://127.0.0.1:8080/";
+        };
+      };
+    };
   };
+
+  networking.firewall.allowedTCPPorts = [ 443 ];
 
   services.octoprint = {
     enable = true;
+    host = "127.0.0.1";
     port = 5000;
-    openFirewall = true;
+    openFirewall = false;
+    # Make sure user and statedir are correct
+    user = "octoprint";
     stateDir = "/var/lib/octoprint";
+    extraConfig = {
+      # Set server commands for nixos paths
+      server.commands = {
+        serverRestartCommand = "/run/wrappers/bin/sudo ${pkgs.systemd}/bin/systemctl restart octoprint.service";
+        systemRestartCommand= "/run/wrappers/bin/sudo ${pkgs.systemd}/bin/systemctl reboot";
+        systemShutdownCommand = "/run/wrappers/bin/sudo ${pkgs.systemd}/bin/systemctl poweroff";
+      };
+    };
+  };
+
+  # Make sure octoprint starts after state dir is mounted
+  systemd.services = {
+    octoprint = {
+      after = [ "var-lib-octoprint.mount" ];
+    };
+    nginx = {
+      after = [ "var-lib-octoprint.mount" ];
+    };
   };
 
   users = {
@@ -76,15 +128,39 @@ in {
     };
   };
 
-  security.sudo.extraRules= [
-    {  users = [ "${username}" ];
-      commands = [
-         { command = "ALL" ;
-           options= [ "NOPASSWD" "SETENV" ]; 
-        }
-      ];
-    }
-  ];
+  # Let user ${username} use all commands NOPASSWD.
+  # Let user octoprint use some systemctl commands.
+  security.sudo = {
+    enable = true;
+    extraRules= [
+      {
+        users = [ "${username}" ];
+        commands = [
+          {
+            command = "ALL" ;
+            options = [ "NOPASSWD" "SETENV" ];
+          }
+        ];
+      }
+      {
+        users = [ "octoprint" ];
+        commands = [
+          {
+            command = "${pkgs.systemd}/bin/systemctl reboot";
+            options = [ "NOPASSWD" ];
+          }
+          {
+            command = "${pkgs.systemd}/bin/systemctl poweroff";
+            options = [ "NOPASSWD" ];
+          }
+          {
+            command = "${pkgs.systemd}/bin/systemctl restart octoprint.service";
+            options = [ "NOPASSWD" ];
+          }
+        ];
+      }
+    ];
+  };
 
   system.stateVersion = "23.11";
 }

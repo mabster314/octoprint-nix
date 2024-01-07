@@ -9,7 +9,6 @@
     };
 
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
-
   };
 
   outputs = { self, nixpkgs, nixos-generators, nixos-hardware, ... }: 
@@ -21,10 +20,12 @@
         disabledModules = [
           "profiles/base.nix"
         ];
-        nixpkgs.overlays = [ (final: super: {
+        nixpkgs.overlays = [
+          (final: super: {
             makeModulesClosure = x:
               super.makeModulesClosure (x // { allowMissing = true; });
-        }) ];
+          })
+        ];
       };
     };
    
