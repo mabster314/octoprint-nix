@@ -9,6 +9,7 @@
     };
 
     nixos-hardware.url = "github:NixOS/nixos-hardware/master";
+
   };
 
   outputs = { self, nixpkgs, nixos-generators, nixos-hardware, ... }: 
