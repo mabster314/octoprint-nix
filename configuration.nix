@@ -10,18 +10,6 @@ let
   dns = [ "1.1.1.1" "8.8.8.8" ];
   timezone = "America/New_York";
 in {
-  boot = {
-    kernelPackages = pkgs.linuxKernel.packages.linux_rpi4;
-    initrd.availableKernelModules = [ "xhci_pci" "usbhid" "usb_storage" ];
-    loader = {
-      grub.enable = false;
-      generic-extlinux-compatible.enable = true;
-      raspberryPi.firmwareConfig = ''
-        gpu_mem=192
-      '';
-    };
-  };
-
   networking = {
     hostName = "${hostname}";
     useDHCP = false;
