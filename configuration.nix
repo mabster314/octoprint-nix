@@ -6,8 +6,6 @@ let
   ];
   hostname = "octoprint";
   nfsHost = "192.168.0.32:/mnt/atlantic/octoprint";
-  wlan_ssid = "Warriors DC";
-  wlan_psk = "***REMOVED***";
   ip = { address = "192.168.0.174"; prefixLength = 24; };
   gateway = "192.168.0.1";
   dns = [ "1.1.1.1" "8.8.8.8" ];
@@ -21,9 +19,10 @@ in {
     interfaces.wlan0.ipv4.addresses = [
       ip
     ];
-     wireless = {
+    wireless = {
       enable = true;
-      networks."${wlan_ssid}".psk = "${wlan_psk}";
+      environmentFile = config.sops.secrets."wireless.env".path;
+      networks."@uuid@".psk = "@psk@";
       interfaces = [ "wlan0" ];
     };
   };
@@ -57,8 +56,8 @@ in {
     enable = true;
     virtualHosts."octoprint.local" = {
       forceSSL = true;
-      sslCertificate = "/var/lib/octoprint/.ssl/cert.pem";
-      sslCertificateKey = "/var/lib/octoprint/.ssl/key.pem";
+      sslCertificate = "/run/secrets/x509_cert";
+      sslCertificateKey = "/run/secrets/x509_key";
       locations = {
         "/" = {
           proxyPass = "http://127.0.0.1:5000/";

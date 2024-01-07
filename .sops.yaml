@@ -1,0 +1,10 @@
+keys:
+  - &max 71EF8F1F0C248B4D5CDC1B4774B3D79077EE37A8
+  - &octoprint age1vcwnfzc2x4af7msu5zjy99tp8c0xp7kn3kcyqvget4xg8ckkeqyquj2tk3
+creation_rules:
+  - path_regex: ^secrets.yaml$
+    key_groups:
+    - pgp:
+      - *max
+      age:
+      - *octoprint
