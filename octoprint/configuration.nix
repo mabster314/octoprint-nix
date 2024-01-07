@@ -1,9 +1,5 @@
 { config, lib, pkgs, ... }:
-let
-  user = "max";
-  password="printer";
-  hostname = "octoprint";
-in {
+{
   boot = {
     kernelPackages = pkgs.linuxKernel.packages.linux_rpi4;
     initrd.availableKernelModules = [ "xhci_pci" "usbhid" "usb_storage" ];
@@ -17,7 +13,7 @@ in {
   };
 
   networking = {
-    hostName = hostname;
+    hostName = "octoprint";
     useDHCP = false;
     defaultGateway = "192.168.0.1";
     nameservers = [
@@ -40,7 +36,13 @@ in {
     libraspberrypi
   ];
 
-  services.openssh.enable = true;
+  services.openssh = {
+    enable = true;
+    settings = {
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+    };
+  };
 
   services.octoprint = {
     enable = true;
@@ -53,13 +55,25 @@ in {
 
   users = {
     mutableUsers = false;
-    users."${user}" = {
+    users."max" = {
       isNormalUser = true;
-      password = password;
       extraGroups = [ "wheel" "video" ];
+      openssh.authorizedKeys.keys = [
+        # Max's smartcard
+        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQChvjHy0zchvYYpZ5qja4BA9c53A26iVlbQ2oNFiOLyQYmMztJXGfSXATXzI6tVQm0zS8B7c+0+6DzTILlL514oNJ5Qyf5FLhQqts/4bd/o9f0NMDcH2QV++zosHvc+xFZmYAnq/iScR01BkIi5QrashZEd3hIlRNKec73ZPtdV62OUG/SaBs4KVvl2ZleT9qAQ1r3FfvNDUKbDGmj912yoTyHfdz+3snH+nbpV8sF6nkznQZvnPrQNqlo0LMctwdXENiZLipybpwzZgUjO14+ItSD/+zMeBa5Y6TMNynheSNSWbPi1SttBcq3Zkx5mhXg46eNpEqZ920QVWEZFR3Fd max"
+      ];
     };
   };
 
-  hardware.enableRedistributableFirmware = true;
+  security.sudo.extraRules= [
+    {  users = [ "max" ];
+      commands = [
+         { command = "ALL" ;
+           options= [ "NOPASSWD" "SETENV" ]; 
+        }
+      ];
+    }
+  ];
+
   system.stateVersion = "23.11";
 }
