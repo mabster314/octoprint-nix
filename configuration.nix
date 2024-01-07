@@ -1,6 +1,9 @@
 { config, lib, pkgs, ... }:
 let
   username = "max";
+  pubkeys = [
+    "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQChvjHy0zchvYYpZ5qja4BA9c53A26iVlbQ2oNFiOLyQYmMztJXGfSXATXzI6tVQm0zS8B7c+0+6DzTILlL514oNJ5Qyf5FLhQqts/4bd/o9f0NMDcH2QV++zosHvc+xFZmYAnq/iScR01BkIi5QrashZEd3hIlRNKec73ZPtdV62OUG/SaBs4KVvl2ZleT9qAQ1r3FfvNDUKbDGmj912yoTyHfdz+3snH+nbpV8sF6nkznQZvnPrQNqlo0LMctwdXENiZLipybpwzZgUjO14+ItSD/+zMeBa5Y6TMNynheSNSWbPi1SttBcq3Zkx5mhXg46eNpEqZ920QVWEZFR3Fd cardno:0006 05312024"
+  ];
   hostname = "octoprint";
   nfsHost = "192.168.0.32:/mnt/atlantic/octoprint";
   wlan_ssid = "Warriors DC";
@@ -29,7 +32,10 @@ in {
 
   environment.systemPackages = with pkgs; [
     vim
-    libraspberrypi
+    git
+    udiskie
+    kitty
+    tmux
   ];
 
   services.openssh = {
@@ -46,6 +52,7 @@ in {
     fsType = "nfs";
   };
 
+  # Nginx configuration for octoprint
   services.nginx = {
     enable = true;
     virtualHosts."octoprint.local" = {
@@ -109,19 +116,15 @@ in {
     users."${username}" = {
       isNormalUser = true;
       extraGroups = [ "wheel" "video" ];
-      openssh.authorizedKeys.keys = [
-        # Max's smartcard
-        "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQChvjHy0zchvYYpZ5qja4BA9c53A26iVlbQ2oNFiOLyQYmMztJXGfSXATXzI6tVQm0zS8B7c+0+6DzTILlL514oNJ5Qyf5FLhQqts/4bd/o9f0NMDcH2QV++zosHvc+xFZmYAnq/iScR01BkIi5QrashZEd3hIlRNKec73ZPtdV62OUG/SaBs4KVvl2ZleT9qAQ1r3FfvNDUKbDGmj912yoTyHfdz+3snH+nbpV8sF6nkznQZvnPrQNqlo0LMctwdXENiZLipybpwzZgUjO14+ItSD/+zMeBa5Y6TMNynheSNSWbPi1SttBcq3Zkx5mhXg46eNpEqZ920QVWEZFR3Fd cardno:0006 05312024"
-      ];
+      openssh.authorizedKeys.keys = pubkeys;
     };
   };
 
-  # Let user ${username} use all commands NOPASSWD.
-  # Let user octoprint use some systemctl commands.
   security.sudo = {
     enable = true;
     extraRules= [
       {
+        # Let user ${username} use all commands NOPASSWD.
         users = [ "${username}" ];
         commands = [
           {
@@ -131,6 +134,7 @@ in {
         ];
       }
       {
+        # Let user octoprint use some systemctl commands NOPASSWD
         users = [ "octoprint" ];
         commands = [
           {

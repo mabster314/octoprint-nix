@@ -5,10 +5,15 @@
   disabledModules = [
     "profiles/base.nix"
   ];
+
   nixpkgs.overlays = [
     (final: super: {
       makeModulesClosure = x:
         super.makeModulesClosure (x // { allowMissing = true; });
     })
+  ];
+
+  environment.systemPackages = with pkgs; [
+    libraspberrypi
   ];
 }
