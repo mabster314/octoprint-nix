@@ -22,7 +22,7 @@ in {
     wireless = {
       enable = true;
       environmentFile = config.sops.secrets."wireless.env".path;
-      networks."@uuid@".psk = "@psk@";
+      networks."@ssid@".psk = "@psk@";
       interfaces = [ "wlan0" ];
     };
   };

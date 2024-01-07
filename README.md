@@ -23,7 +23,7 @@ Flash an SD card with `zstdcat result/sd-image/nixos-sd-image-*.img.zst | sudo d
     - you must provide a sops-encrypted `secrets.yaml` file containing:
         ```
         wireless.env: |
-            uuid=<Network SSID>
+            ssid=<Network SSID>
             psk=<psk>
         x509_cert: |
             -----BEGIN CERTIFICATE-----
