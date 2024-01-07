@@ -1,5 +1,5 @@
 {
-  description = "Base system for raspberry pi 4";
+  description = "Max's octoprint server on raspberry pi 4";
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-23.11";
     
@@ -35,7 +35,7 @@
         modules = [
           self.nixosModules.system
           nixos-hardware.nixosModules.raspberry-pi-4
-          ./octoprint/configuration.nix
+          ./configuration.nix
         ];
       };
     };
